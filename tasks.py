@@ -7,12 +7,14 @@ from RPA.Tables import Tables
 import os
 import time
 
+
 def archive_receipts():
     archive = Archive()
     receipts_dir = "output/receipts"
     zip_path = "output/receipts.zip"
     archive.archive_folder_with_zip(receipts_dir, zip_path)
     return zip_path
+
 
 def store_receipt_as_pdf(order_number):
     pdf = PDF()
@@ -23,23 +25,28 @@ def store_receipt_as_pdf(order_number):
     pdf.html_to_pdf(receipt_html, output_path)
     return output_path
 
+
 def screenshot_robot(order_number):
     screenshots_dir = "output/screenshots"
     os.makedirs(screenshots_dir, exist_ok=True)
     output_path = f"{screenshots_dir}/robot_{order_number}.png"
-    browser.page().screenshot(path=output_path)
+    browser.page().locator("#robot-preview-image").screenshot(path=output_path)
     return output_path
+
 
 def embed_screenshot_to_receipt(screenshot, pdf_file):
     pdf = PDF()
     pdf.add_files_to_pdf([pdf_file, screenshot], pdf_file, append=True)
 
+
 def go_to_order_another():
     browser.page().click("#order-another")
+
 
 def open_robot_order_website():
     browser.configure(slowmo=100)
     browser.goto("https://robotsparebinindustries.com/#/robot-order")
+
 
 def get_orders():
     url = "https://robotsparebinindustries.com/orders.csv"
@@ -49,11 +56,13 @@ def get_orders():
     orders = tables.read_table_from_csv("orders.csv", header=True)
     return orders
 
+
 def close_annoying_modal():
     page = browser.page()
     if page.is_visible(".alert-buttons button.btn-dark"):
         page.click(".alert-buttons button.btn-dark")
-        
+
+
 def fill_the_form(row):
     page = browser.page()
     page.select_option("#head", str(row["Head"]))
@@ -61,9 +70,11 @@ def fill_the_form(row):
     page.fill("input[placeholder='Enter the part number for the legs']", str(row["Legs"]))
     page.fill("#address", row["Address"])
 
+
 def preview_robot():
     page = browser.page()
     page.click("#preview")
+
 
 def submit_order():
     page = browser.page()
@@ -76,6 +87,7 @@ def submit_order():
         if page.is_visible("css:.alert.alert-danger"):
             continue
 
+
 @task
 def order_robots_from_RobotSpareBin():
     """
@@ -86,8 +98,14 @@ def order_robots_from_RobotSpareBin():
     Creates ZIP archive of the receipts and the images.
     """
     open_robot_order_website()
-    close_annoying_modal()
     orders = get_orders()
     for row in orders:
-        print(f"Processing order: {row}")
+        close_annoying_modal()
         fill_the_form(row)
+        preview_robot()
+        screenshot = screenshot_robot(row["Order number"])
+        submit_order()
+        pdf_file = store_receipt_as_pdf(row["Order number"])
+        embed_screenshot_to_receipt(screenshot, pdf_file)
+        go_to_order_another()
+    archive_receipts()
