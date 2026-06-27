@@ -1,5 +1,7 @@
 # Robot Order Automation — Robocorp / Python
 
+![Demo](production-demo.gif)
+
 An end-to-end RPA bot built with Robocorp and the rpaframework that fully automates a multi-step robot ordering workflow: reads order data from CSV, fills and submits a web form for each order, captures a screenshot of the configured robot, exports each receipt as a PDF with the screenshot embedded, and archives all output into a ZIP file.
 
 ---
